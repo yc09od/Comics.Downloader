@@ -1,0 +1,6 @@
+@Comics.Downloader.API_HostAddress = http://localhost:5239
+
+GET {{Comics.Downloader.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
