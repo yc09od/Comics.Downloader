@@ -14,4 +14,9 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Comics.Downloader.Model\Comics.Downloader.Model.csproj" />
+    <ProjectReference Include="..\Comics.Downloader.Service\Comics.Downloader.Service.csproj" />
+  </ItemGroup>
+
 </Project>
