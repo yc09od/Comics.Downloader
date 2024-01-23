@@ -54,7 +54,7 @@ namespace Comics.Downloader.Service.Authentication.Jwt
 
                 return validatedToken is not null;
             }
-            catch
+            catch (Exception e)
             {
                 return false;
             }

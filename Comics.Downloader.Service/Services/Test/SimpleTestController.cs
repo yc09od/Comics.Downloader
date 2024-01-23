@@ -41,7 +41,7 @@ namespace Comics.Downloader.Service.Services.Test
         public TestUser Get()
         {
             var db = this.mongoDbContext.GetDb();
-            var userCollection = db.GetCollection<TestUser>("TestUser");
+            var userCollection = db.GetCollection<TestUser>(nameof(TestUser));
             var user = userCollection.Find(x => x.Id == new ObjectId("65947953590c1f03e6c4c097")).SingleOrDefault();
 
             var conf = accessor.HttpContext.User.Claims.ToList();
