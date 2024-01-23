@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
-using Comics.Downloader.Model;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Comics.Downloader.Service.Authentication.Jwt
+namespace Comics.Downloader.Jwt
 {
     public static class JwtTokenUtility
     {
@@ -21,7 +16,7 @@ namespace Comics.Downloader.Service.Authentication.Jwt
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
                     Subject = new ClaimsIdentity(subjects.Select(x => new Claim(x.Key, x.Value))),
-                    Expires = DateTime.Now.AddDays(2),
+                    Expires = DateTime.UtcNow.AddHours(4),
                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
                         SecurityAlgorithms.HmacSha256Signature)
                 };
@@ -31,6 +26,15 @@ namespace Comics.Downloader.Service.Authentication.Jwt
             }
         }
 
+        public static Dictionary<string, string> ToDictionary(this string token)
+        {
+            var result = new Dictionary<string, string>();
+            var h = new JwtSecurityTokenHandler();
+            var tokenDetail = h.ReadJwtToken(token);
+            return tokenDetail.Claims.ToList().ToDictionary(x => x.Type, x => x.Value);
+        }
+
+
         public static bool ValidateToken(string token, string secret)
         {
             if (token.IsNullOrEmpty())
@@ -39,18 +43,10 @@ namespace Comics.Downloader.Service.Authentication.Jwt
             }
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(secret);
 
             try
             {
-                tokenHandler.ValidateToken(token, validationParameters: new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ClockSkew = TimeSpan.Zero,
-                }, out SecurityToken validatedToken);
+                tokenHandler.ValidateToken(token, validationParameters: GetTokenValidationParameters(secret), out SecurityToken validatedToken);
 
                 return validatedToken is not null;
             }
@@ -58,6 +54,18 @@ namespace Comics.Downloader.Service.Authentication.Jwt
             {
                 return false;
             }
+        }
+
+        public static TokenValidationParameters GetTokenValidationParameters(string secret)
+        {
+            return new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secret)),
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ClockSkew = TimeSpan.Zero,
+            };
         }
     }
 }

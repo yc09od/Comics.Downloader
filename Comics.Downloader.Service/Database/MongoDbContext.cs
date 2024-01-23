@@ -1,6 +1,4 @@
-﻿using Comics.Downloader.Model;
-using Comics.Downloader.Service.Utiliyes;
-using Microsoft.Extensions.Options;
+﻿using Comics.Downloader.Service.Utiliyes;
 using MongoDB.Driver;
 
 namespace Comics.Downloader.Service.Database

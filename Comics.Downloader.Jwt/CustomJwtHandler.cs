@@ -2,42 +2,33 @@
 using System.Net;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
-using Amazon.Runtime.Internal;
-using Comics.Downloader.Model;
-using Comics.Downloader.Service.Database;
-using Comics.Downloader.Service.Utiliyes;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Comics.Downloader.Service.Authentication.Jwt
+namespace Comics.Downloader.Jwt
 {
     public class CustomJwtHandler : JwtBearerHandler
     {
-        private readonly MongoDbContext? _mongoContext;
-        private readonly Appsetting _appsetting;
+        private readonly IOptionsMonitor<JwtBearerOptions> _options;
 
-        public CustomJwtHandler(IOptions<Appsetting> appsetting, MongoDbContext? _mongoContext, IOptionsMonitor<JwtBearerOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock) : base(options, logger, encoder, clock)
-        {
-            _mongoContext = this._mongoContext;
-            _appsetting = appsetting.Value;
-        }
 
         public CustomJwtHandler(IOptionsMonitor<JwtBearerOptions> options, ILoggerFactory logger, UrlEncoder encoder) : base(options, logger, encoder)
         {
+            _options = options;
         }
 
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             var tokenString = Context.Request.Headers.Authorization.FirstOrDefault()?.Substring("Bearer ".Length).Trim() ?? string.Empty;
-            if (tokenString.IsNullOrEmpty())
+            if (string.IsNullOrEmpty(tokenString))
             {
                 return AuthenticateResult.Fail("No Bearer token in headers");
             }
 
-            //return AuthenticateResult.NoResult();
-            if (!JwtTokenUtility.ValidateToken(tokenString, _appsetting.Jwt.Secret)) 
+            //return AuthenticateResult.NoResult(); //Todo chagne this later
+            if (!JwtTokenUtility.ValidateToken(tokenString, _options.ToString())) 
             {
                 var error = new HttpRequestException("Invalid token", null, HttpStatusCode.Forbidden);
                 throw error;

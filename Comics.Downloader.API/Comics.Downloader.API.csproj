@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Comics.Downloader.Jwt\Comics.Downloader.Jwt.csproj" />
     <ProjectReference Include="..\Comics.Downloader.Model\Comics.Downloader.Model.csproj" />
     <ProjectReference Include="..\Comics.Downloader.Service\Comics.Downloader.Service.csproj" />
   </ItemGroup>

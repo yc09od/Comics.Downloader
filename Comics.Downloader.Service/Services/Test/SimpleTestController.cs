@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Amazon.Runtime.SharedInterfaces;
+﻿using Comics.Downloader.Jwt;
 using Comics.Downloader.Model;
-using Comics.Downloader.Service.Authentication.Jwt;
 using Comics.Downloader.Service.Database;
 using Comics.Downloader.Service.Utiliyes;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +9,6 @@ using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
-using Newtonsoft.Json;
 
 namespace Comics.Downloader.Service.Services.Test
 {
@@ -73,8 +65,7 @@ namespace Comics.Downloader.Service.Services.Test
             };
         }
 
-        [HttpGet("auth-test")]
-        [Authorize]
+        [HttpGet("auth-test"), Authorize]
         public dynamic GetTokenInfo()
         {
             var user = accessor.HttpContext.User.Claims.ToList().Select(x => new KeyValuePair<string, string>(x.Type, x.Value));
