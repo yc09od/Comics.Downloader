@@ -12,6 +12,9 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.DevTools;
 using RestSharp;
 using Sprache;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Comics.Downloader.Parser;
 
@@ -25,7 +28,7 @@ public class Program
 
         var parser = new ManHuaGuiParser(url);
         var chapters = parser.GetChapters(url);
-        var pages = parser.GetPages(chapters.First(), 0, 10);
+        var pages = parser.GetPages(chapters.First());
 
         chapters.ForEach(x =>
         {
@@ -50,10 +53,6 @@ public class Program
 
     public static void Main(string[] args)
     {
-
         test1();
-
-        
-        
     }
 }
