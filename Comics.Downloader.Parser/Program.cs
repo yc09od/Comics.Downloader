@@ -30,29 +30,17 @@ public class Program
         var chapters = parser.GetChapters(url);
         var pages = parser.GetPages(chapters.First());
 
-        chapters.ForEach(x =>
-        {
-            //Console.WriteLine($"url = {x.FirstPageUrl}, label={x.label}");
-        });
-
-        StringBuilder sb = new StringBuilder();
-
-        pages.ForEach(x =>
-        {
-            sb.Append($"url = {x.Url}, label={x.label}, imageUrl={x.ImageUrl}\n");
-        });
-
         parser.DownloadImages(pages, "c:\\temp", "bigsword");
 
 
 
         //Console.WriteLine(parser.GetPageCount("https://www.manhuagui.com/comic/4688/40268.html"));
-        Console.ReadLine();
     }
 
 
-    public static void Main(string[] args)
+    public async static Task<int> Main(string[] args)
     {
         test1();
+        return 0;
     }
 }

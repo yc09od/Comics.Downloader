@@ -8,6 +8,8 @@ using Serilog;
 using Serilog.Core;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace Comics.Downloader.Parser.Parser
 {
@@ -17,7 +19,7 @@ namespace Comics.Downloader.Parser.Parser
         private const string Host = "https://www.manhuagui.com";
         private const string PageSelectorId = "pageSelect";
         private const int WaitTime = 3000;
-        private const int TaskQueueSize = 3;
+        private const int TaskQueueSize = 10;
 
         public ManHuaGuiParser(string chapterPageUrl)
         {
@@ -137,39 +139,42 @@ namespace Comics.Downloader.Parser.Parser
             ConcurrentBag<KeyValuePair<string, string>>
                 urlContainer = new ConcurrentBag<KeyValuePair<string, string>>();
 
-            var tasks = result.Select(x => new Task(() =>
+            var createTask = (Page page) =>
             {
-                var imageUrl = GetPageImageUrl(x.Url);
-                urlContainer.Add(new KeyValuePair<string, string>(x.Id, imageUrl));
-            })).ToArray();
+                return new Task( () =>
+                {
+                    var imageUrl = GetPageImageUrl(page.Url);
+                    urlContainer.Add(new KeyValuePair<string, string>(page.Id, imageUrl));
+                });
+            };
 
-            while (tasks.Any(x => x.Status == TaskStatus.Created))
+            var tasks = result.Select(x => new KeyValuePair<Page, Task>(x, createTask(x))).ToArray();
+
+            while (tasks.Any(x => x.Value.Status == TaskStatus.Created))
             {
-                var pauseTasks = tasks.Where(x => x.Status == TaskStatus.Created || x.Status == TaskStatus.Faulted);
+                var pauseTasks = tasks.Where(x => x.Value.Status == TaskStatus.Created);
                 var selectedPauseTasks = pauseTasks.Where((v, i) => i < TaskQueueSize).ToArray();
                 foreach (var task in selectedPauseTasks)
                 {
-                    task.Start();
+                    task.Value.Start();
                 }
 
                 try
                 {
-                    Log.Information($"GetPageImageUrl tasks start");
+                    Log.Information($"GetPageImageUrl tasks start {string.Join("\t|\t", selectedPauseTasks.Select(x => x.Key.label))}");
 
-                    Task.WhenAll(selectedPauseTasks).GetAwaiter().GetResult();
+                    var r = Task.WhenAll(selectedPauseTasks.ToList().Select(x => x.Value));
+
+                    r.Wait();
 
                     Log.Information($"GetPageImageUrl tasks success");
                 }
-                catch (AggregateException ex)
-                {
-                    foreach (var e in ex.InnerExceptions)
-                    {
-                        Log.Error($"GetPageImageUrl tasks fail {e.Message}");
-                    }
-                }
                 catch (Exception e)
                 {
-                    //ignore
+                    var errorPagesTasks = selectedPauseTasks.Where(x => x.Value.Status != TaskStatus.RanToCompletion)
+                        .Select(x => new KeyValuePair<Page, Task>(x.Key, createTask(x.Key)));
+                    tasks = tasks.Concat(errorPagesTasks.ToArray()).ToArray();
+                    Log.Error($"GetPageImageUrl tasks fail {e.Message} and ### in exception");
                 }
             }
             
@@ -183,7 +188,7 @@ namespace Comics.Downloader.Parser.Parser
 
         public string GetPageImageUrl(string pageUrl)
         {
-            Log.Information($"GetPageImageUrl tasks start {pageUrl}");
+            Log.Information($"GetPageImageUrl start {pageUrl}");
             
             var chromeOptions = new ChromeOptions();
             chromeOptions.AddArgument("--headless");
@@ -213,22 +218,22 @@ namespace Comics.Downloader.Parser.Parser
                     {
                         image = driver.FindElement(By.Id("mangaFile"));
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        throw;
+                        throw new AggregateException(ex);
                     }
                     
                     // 获取页面内容
                     result = image.GetAttribute("src");
 
-                    Log.Information($"GetPageImageUrl tasks success {pageUrl}");
+                    Log.Information($"GetPageImageUrl success {pageUrl}");
                     return result;
                 }
                 catch (Exception e)
                 {
                     File.WriteAllText("c:\\temp\\error.txt", driver.PageSource);
-                    Log.Error($"GetPageImageUrl tasks fail {pageUrl}");
-                    throw;
+                    Log.Error($"GetPageImageUrl fail {pageUrl}");
+                    throw new AggregateException(e);
                 }
                 finally
                 {
@@ -266,16 +271,16 @@ namespace Comics.Downloader.Parser.Parser
                     
 
                     // 等待一段时间，确保按钮点击后页面加载完成
-                    System.Threading.Thread.Sleep(WaitTime);
+                    Thread.Sleep(WaitTime);
 
                     // 获取页面内容
                     string pageContent = driver.PageSource;
                     result = pageContent;
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
                     Log.Error($"GetChapterPageHtml fail {chapterPageUrl}");
-                    throw;
+                    throw ex;
                 }
                 finally
                 {
