@@ -6,7 +6,7 @@ namespace Comics.Downloader.Parser;
 
 public class Program
 {
-    public static async Task<int> test1()
+    public static async Task test1()
     {
         Console.WriteLine("Hello, World!");
 
@@ -17,8 +17,6 @@ public class Program
         var pages = await parser.GetPages(chapters[1], 0, 100);
 
         await parser.DownloadImages(pages, "c:\\temp", "bigsword").ConfigureAwait(false);
-
-        return await Task.FromResult(1).ConfigureAwait(false);
 
         //Console.WriteLine(parser.GetPageCount("https://www.manhuagui.com/comic/4688/40268.html"));
     }
